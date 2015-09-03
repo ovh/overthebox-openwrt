@@ -173,7 +173,7 @@ foreach my $mirror (@ARGV) {
 			push @extra, "$extra[0]/longterm/v$1";
 		}		
 		foreach my $dir (@extra) {
-			push @mirrors, "ftp://ftp.all.kernel.org/pub/$dir";
+#			push @mirrors, "ftp://ftp.all.kernel.org/pub/$dir";
 			push @mirrors, "http://ftp.all.kernel.org/pub/$dir";
 		}
     } elsif ($mirror =~ /^\@GNOME\/(.+)$/) {
