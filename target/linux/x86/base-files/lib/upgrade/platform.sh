@@ -24,6 +24,13 @@ platform_export_bootpart() {
 						return 0
 					fi
 				done
+                                for disk in /dev/mmcblk[0-9]; do
+                                        set -- $(dd if=$disk bs=1 skip=440 count=4 2>/dev/null | hexdump -v -e '4/1 "%02x "')
+                                        if [ "$4$3$2$1" = "$uuid" ]; then
+                                                export BOOTPART="${disk}p1"
+                                                return 0
+                                        fi
+                                done
 			;;
 			/dev/*)
 				export BOOTPART="${disk%[0-9]}1"
@@ -63,4 +70,9 @@ platform_do_upgrade() {
 		get_image "$@" | dd of="${BOOTPART%[0-9]}" bs=4096 conv=fsync
 		sleep 1
 	fi
+        if [ -b "${BOOTPART%p[0-9]}" ]; then
+                sync
+                get_image "$@" | dd of="${BOOTPART%p[0-9]}" bs=4096 conv=fsync
+                sleep 1
+        fi
 }
