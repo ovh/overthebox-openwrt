@@ -23,13 +23,6 @@ config interface 'if0'
 	option delegate '0'
 	option multipath 'off'
 
-config interface 'vpn0'
-	option proto 'none'
-	option ifname 'vpn0'
-	option delegate '0'
-	option multipath 'off'
-
-
 config interface 'tun0'
         option ifname 'tun0'
         option proto 'none'
