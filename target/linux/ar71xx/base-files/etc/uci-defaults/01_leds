@@ -9,7 +9,8 @@
 board=$(ar71xx_board_name)
 
 case "$board" in
-airgateway)
+airgateway | \
+airgatewaypro)
 	ucidef_set_led_wlan "wlan" "WLAN" "ubnt:blue:wlan" "phy0tpt"
 	;;
 alfa-nx)
@@ -94,6 +95,12 @@ carambola2)
 	ucidef_set_led_netdev "lan" "LAN" "carambola2:orange:eth0" "eth0"
 	ucidef_set_led_netdev "wan" "WAN" "carambola2:orange:eth1" "eth1"
 	ucidef_set_led_wlan "wlan" "WLAN" "carambola2:green:wlan" "phy0tpt"
+	;;
+
+cf-e316n-v2)
+	ucidef_set_led_netdev "lan" "LAN" "$board:blue:lan" "eth0"
+	ucidef_set_led_netdev "wan" "WAN" "$board:blue:wan" "eth1"
+	ucidef_set_led_wlan "wlan" "WLAN" "$board:blue:wlan" "phy0tpt"
 	;;
 
 cpe510)
@@ -255,6 +262,12 @@ mr16)
 
 mr600)
 	ucidef_set_led_wlan "wlan58" "WLAN58" "mr600:green:wlan58" "phy0tpt"
+	;;
+
+mr1750)
+	ucidef_set_led_netdev "lan" "LAN" "mr1750:blue:wan" "eth0"
+	ucidef_set_led_wlan "wlan58" "WLAN58" "mr1750:blue:wlan58" "phy0tpt"
+	ucidef_set_led_wlan "wlan24" "WLAN24" "mr1750:blue:wlan24" "phy1tpt"
 	;;
 
 mr900 | \
@@ -423,6 +436,10 @@ tl-wa901nd)
 
 tl-wa901nd-v2)
 	ucidef_set_led_wlan "wlan" "WLAN" "tp-link:green:wlan" "phy0tpt"
+	;;
+
+tl-wdr3320-v2)
+	ucidef_set_led_wlan "wlan5g" "WLAN5G" "tp-link:green:wlan5g" "phy0tpt"
 	;;
 
 tl-wdr3500)

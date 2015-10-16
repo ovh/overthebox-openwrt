@@ -87,6 +87,9 @@ d105)
 	ucidef_set_led_default "power" "POWER" "$board:red:power" "1"
 	set_usb_led "$board:green:usb"
 	;;
+db-wrt01)
+	ucidef_set_led_default "power" "power" "$board:orange:power" "1"
+	;;
 dcs-930l-b1)
 	ucidef_set_led_default "power" "POWER" "$board:red:power" "1"
 	ucidef_set_led_netdev "wifi" "WiFi" "$board:blue:wps"
@@ -128,6 +131,24 @@ f5d8235-v2)
 fonera20n)
 	set_usb_led "$board:orange:usb"
 	set_wifi_led "$board:orange:wifi"
+	;;
+hc5661)
+	ucidef_set_led_default "system" "system" "$board:blue:system" "1"
+	ucidef_set_led_netdev "internet" "internet" "$board:blue:internet" "eth0.2"
+	set_wifi_led "$board:blue:wlan2g"
+	;;	
+hc5761)
+	ucidef_set_led_default "system" "system" "$board:blue:system" "1"
+	ucidef_set_led_netdev "internet" "internet" "$board:blue:internet" "eth0.2"
+	set_wifi_led "$board:blue:wlan2g"
+	ucidef_set_led_netdev "wifi5g" "wifi5g" "$board:blue:wlan5g" "rai0"
+	;;
+hc5861)
+	ucidef_set_led_default "system" "system" "$board:blue:system" "1"
+	ucidef_set_led_netdev "internet" "internet" "$board:blue:internet" "eth0.2"
+	set_wifi_led "$board:blue:wlan2g"
+	ucidef_set_led_netdev "wifi5g" "wifi5g" "$board:blue:wlan5g" "rai0"
+	ucidef_set_led_default "turbo" "turbo" "$board:blue:turbo" "0"
 	;;
 hg255d)
 	set_wifi_led "$board:green:wlan"
