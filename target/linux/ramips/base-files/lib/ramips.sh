@@ -97,6 +97,9 @@ ramips_board_detect() {
 	*"DAP-1350")
 		name="dap-1350"
 		;;
+	*"DB-WRT01")
+		name="db-wrt01"
+		;;
 	*"DCS-930")
 		name="dcs-930"
 		;;
@@ -165,6 +168,15 @@ ramips_board_detect() {
 		;;
 	*"FreeStation5")
 		name="freestation5"
+		;;
+	*"HC5661")
+		name="hc5661"
+		;;
+	*"HC5761")
+		name="hc5761"
+		;;
+	*"HC5861")
+		name="hc5861"
 		;;
 	*"HG255D")
 		name="hg255d"
@@ -367,6 +379,9 @@ ramips_board_detect() {
 	*"WIZARD 8800")
 		name="wizard8800"
 		;;
+	*"WizFi630A")
+		name="wizfi630a"
+		;;                
 	*"WL-330N")
 		name="wl-330n"
 		;;

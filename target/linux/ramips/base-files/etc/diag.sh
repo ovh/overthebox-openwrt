@@ -94,6 +94,7 @@ get_status_led() {
 	y1s)
 		status_led="$board:blue:power"
 		;;
+	db-wrt01|\
 	esr-9753)
 		status_led="$board:orange:power"
 		;;
@@ -102,6 +103,11 @@ get_status_led() {
 		;;
 	f7c027)
 		status_led="$board:orange:status"
+		;;
+	hc5*61|\
+	mlw221|\
+	mlwg2)
+		status_led="$board:blue:system"
 		;;
 	m2m)
 		status_led="$board:blue:wifi"
@@ -113,10 +119,6 @@ get_status_led() {
 	miwifi-mini|\
 	zte-q7)
 		status_led="$board:red:status"
-		;;
-	mlw221|\
-	mlwg2)
-		status_led="$board:blue:system"
 		;;
 	mr-102n)
 		status_led="$board:amber:status"
@@ -164,6 +166,9 @@ get_status_led() {
 	whr-g300n|\
 	wzr-agl300nh)
 		status_led="$board:green:router"
+		;;
+	wizfi630a)
+		status_led="$board::run"
 		;;
 	wsr-1166|\
 	wsr-600)

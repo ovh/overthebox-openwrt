@@ -60,22 +60,6 @@ define MkImageEVA
 	cat ./eva.dummy.squashfs >> $(KDIR)/$(1)$(2).eva.align.64k
 endef
 
-define CompressGzip
-	gzip -c $(1) > $(2)
-endef
-
-define PatchKernelGzip
-	cp $(KDIR)/vmlinux$(3) $(KDIR)/vmlinux$(3)-$(1)
-	$(STAGING_DIR_HOST)/bin/patch-cmdline $(KDIR)/vmlinux$(3)-$(1) '$(strip $(2))'
-	$(call CompressGzip,$(KDIR)/vmlinux$(3)-$(1),$(KDIR)/vmlinux$(3)-$(1).gzip)
-endef
-
-define MkImageGzip
-	mkimage -A mips -O linux -T kernel -a 0x80002000 -C gzip \
-		-e 0x80002000 -n 'MIPS OpenWrt Linux-$(LINUX_VERSION)' \
-		-d $(KDIR)/vmlinux$(2)-$(1).gzip $(KDIR)/uImage-$(1)$(2)
-endef
-
 define Image/Build/squashfs
 	cat $(KDIR)/uImage-$(2) $(KDIR)/root.$(1) > $(BIN_DIR)/$(IMG_PREFIX)-$(2)-$(1).image
 	$(call prepare_generic_squashfs,$(BIN_DIR)/$(IMG_PREFIX)-$(2)-$(1).image)
@@ -284,17 +268,6 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
 endif
 endef
 
-define Image/BuildKernelGzip/Template
-	$(call PatchKernelGzip,$(1),$(if $(2),$(2) machtype=$(1),))
-	$(call MkImageGzip,$(1))
-	$(CP) $(KDIR)/uImage-$(1) $(BIN_DIR)/$(IMG_PREFIX)-$(1)-uImage
-ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
-	$(call PatchKernelGzip,$(1),$(if $(2),$(2) machtype=$(1),),-initramfs)
-	$(call MkImageGzip,$(1),-initramfs)
-	$(CP) $(KDIR)/uImage-$(1)-initramfs $(BIN_DIR)/$(IMG_PREFIX)-$(1)-uImage-initramfs
-endif
-endef
-
 
 ifeq ($(CONFIG_TARGET_lantiq_falcon),y)
 
@@ -437,6 +410,9 @@ Image/Build/Profile/VG3503J_V2=$(call Image/BuildLoader/$(1),$(1),VG3503J_V2)
 Image/BuildKernel/Profile/TDW8970=$(call Image/BuildKernelTPLink/Template,TDW8970,TD-W8970v1,$(1))
 Image/Build/Profile/TDW8970=$(call Image/BuildTPLink/$(1),$(1),TDW8970,TD-W8970v1)
 
+Image/BuildKernel/Profile/TDW8980=$(call Image/BuildKernelTPLink/Template,TDW8980,TD-W8980v1,$(1))
+Image/Build/Profile/TDW8980=$(call Image/BuildTPLink/$(1),$(1),TDW8980,TD-W8980v1)
+
 Image/BuildKernel/Profile/VGV7510KW22NOR=$(call Image/BuildKernel/Template,VGV7510KW22NOR,$(1))
 Image/Build/Profile/VGV7510KW22NOR=$(call Image/Build/$(1),$(1),VGV7510KW22NOR)
 
@@ -453,14 +429,6 @@ define Image/Prepare
 	$(call Image/Prepare/Profile,VG3503J)
 	$(call Image/Prepare/Profile,VG3503J_V2)
 endef
-
-endif
-
-
-ifeq ($(CONFIG_TARGET_lantiq_svip_be),y)
-
-Image/BuildKernel/Profile/EASY33016=$(call Image/BuildKernelGzip/Template,EASY33016)
-Image/Build/Profile/EASY33016=$(call Image/Build/$(1),$(1),EASY33016)
 
 endif
 
