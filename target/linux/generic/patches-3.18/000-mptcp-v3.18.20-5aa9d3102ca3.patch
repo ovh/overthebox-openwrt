@@ -6859,7 +6859,7 @@ index 000000000000..5c70e7cca3b3
 +
 diff --git a/net/mptcp/mptcp_balia.c b/net/mptcp/mptcp_balia.c
 new file mode 100644
-index 000000000000..565cb75e2cea
+index 000000000000..9206338cef65
 --- /dev/null
 +++ b/net/mptcp/mptcp_balia.c
 @@ -0,0 +1,267 @@
@@ -6870,7 +6870,7 @@ index 000000000000..565cb75e2cea
 + *	Analysis, Design and Implementation:
 + *	Qiuyu Peng <qpeng@caltech.edu>
 + *	Anwar Walid <anwar@research.bell-labs.com>
-+ *	Jaehyun Hwang <jh.hwang@alcatel-lucent.com>
++ *	Jaehyun Hwang <jhyun.hwang@samsung.com>
 + *	Steven H. Low <slow@caltech.edu>
 + *
 + *	This program is free software; you can redistribute it and/or
@@ -6884,7 +6884,7 @@ index 000000000000..565cb75e2cea
 +
 +#include <linux/module.h>
 +
-+/* The variable 'rate' (i.e., x_r) will be scaled down
++/* The variable 'rate' (i.e., x_r) will be scaled
 + * e.g., from B/s to KB/s, MB/s, or GB/s
 + * if max_rate > 2^rate_scale_limit
 + */
@@ -6945,7 +6945,7 @@ index 000000000000..565cb75e2cea
 +	const struct mptcp_cb *mpcb = tp->mpcb;
 +	const struct sock *sub_sk;
 +	u64 max_rate = 0, rate = 0, sum_rate = 0;
-+	u64 alpha = 0, ai = 0, md = 0;
++	u64 alpha, ai = tp->snd_cwnd, md = (tp->snd_cwnd >> 1);
 +	int num_scale_down = 0;
 +
 +	if (!mpcb)
@@ -7901,7 +7901,7 @@ index 000000000000..5d761164eb85
 +MODULE_VERSION("0.1");
 diff --git a/net/mptcp/mptcp_ctrl.c b/net/mptcp/mptcp_ctrl.c
 new file mode 100644
-index 000000000000..cdb55f5c798b
+index 000000000000..f8e5c2e1f132
 --- /dev/null
 +++ b/net/mptcp/mptcp_ctrl.c
 @@ -0,0 +1,2675 @@
@@ -10551,7 +10551,7 @@ index 000000000000..cdb55f5c798b
 +	if (mptcp_register_scheduler(&mptcp_sched_default))
 +		goto register_sched_failed;
 +
-+	pr_info("MPTCP: Stable release v0.89.0-rc");
++	pr_info("MPTCP: Stable release v0.90.0");
 +
 +	mptcp_init_failed = false;
 +
