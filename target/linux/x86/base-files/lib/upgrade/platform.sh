@@ -62,5 +62,6 @@ platform_do_upgrade() {
 		sync
 		get_image "$@" | dd of="${BOOTPART%[0-9]}" bs=4096 conv=fsync
 		sleep 1
+		return
 	fi
 }
