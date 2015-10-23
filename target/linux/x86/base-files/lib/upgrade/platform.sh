@@ -159,5 +159,6 @@ platform_do_upgrade() {
 		fi
 
 		sleep 1
+		return
 	fi
 }
