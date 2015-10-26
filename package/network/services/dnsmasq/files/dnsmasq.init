@@ -137,6 +137,7 @@ dnsmasq() {
 	append_bool "$cfg" quietdhcp "--quiet-dhcp"
 	append_bool "$cfg" sequential_ip "--dhcp-sequential-ip"
 	append_bool "$cfg" filter_aaaa "--filter-aaaa"
+	append_bool "$cfg" all_servers "--all-servers"
 
 	append_parm "$cfg" dhcpscript "--dhcp-script"
 	append_parm "$cfg" cachesize "--cache-size"
