@@ -248,7 +248,7 @@ menu "Target Images"
 		default y
 
 	config TARGET_IMAGES_EMBEDED
-		bool "Embed a copy of the GZip images in /recovery"
+		bool "Create an embeded image that contains a copy of the GZip image in /recovery of rootfs"
 		depends on TARGET_ROOTFS_EXT4FS && TARGET_IMAGES_GZIP
 		default y
 
