@@ -198,12 +198,15 @@ define Image/Build/gzip_embeded
 endef
 
 ifneq ($(CONFIG_TARGET_IMAGES_GZIP),)
+  ifneq ($(CONFIG_TARGET_IMAGES_EMBEDED),)
+    define Image/Build/embeded/ext4
+	$(call Image/Build/embeded,ext4)
+	$(call Image/Build/gzip_embeded,ext4)
+    endef
+  endif
   define Image/Build/gzip/ext4
 	$(call Image/Build/gzip,ext4)
-	ifneq ($(CONFIG_TARGET_IMAGES_EMBEDED),)
-		$(call Image/Build/embeded,ext4)
-		$(call Image/Build/gzip_embeded,ext4)
-	endif
+	$(call Image/Build/embeded/ext4)
   endef
   ifneq ($(CONFIG_TARGET_IMAGES_PAD),)
     define Image/Build/gzip/squashfs
