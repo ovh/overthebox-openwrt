@@ -247,6 +247,11 @@ menu "Target Images"
 		depends on TARGET_IMAGES_PAD || TARGET_ROOTFS_EXT4FS
 		default y
 
+	config TARGET_IMAGES_EMBEDED
+		bool "Embed a copy of the GZip images in /recovery"
+		depends on TARGET_ROOTFS_EXT4FS && TARGET_IMAGES_GZIP
+		default y
+
 	comment "Image Options"
 
 	source "target/linux/*/image/Config.in"

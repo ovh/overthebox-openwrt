@@ -153,9 +153,57 @@ define Image/Build/gzip
 	gzip -f9n $(BIN_DIR)/$(IMG_PREFIX)-rootfs-$(1).img
 endef
 
+define Image/Build/embeded
+	# Copy the base rootfs in a new file
+	$(CP) $(KDIR)/root.$(1) $(KDIR)/root.embeded.$(1)
+	# Generate debugfs command file
+	echo "mkdir /recovery" > embed_recovery.cmd
+	echo "cd /recovery" >> embed_recovery.cmd
+	echo "write $(BIN_DIR)/$(IMG_PREFIX)-rootfs-$(1).img.gz $(IMG_PREFIX)-rootfs-$(1).img.gz" >> embed_recovery.cmd
+	/sbin/debugfs -w -f embed_recovery.cmd $(KDIR)/root.embeded.$(1)
+	rm embed_recovery.cmd
+	# Generate the new image using embeded roofs
+	# left here because the image builder doesnt need these
+	$(INSTALL_DIR) $(KDIR)/root.grub/boot/grub $(KDIR)/grub2
+	$(CP) $(KDIR)/bzImage $(KDIR)/root.grub/boot/vmlinuz
+	grub-mkimage \
+		-d $(STAGING_DIR_HOST)/lib/grub/i386-pc \
+		-o $(KDIR)/grub2/core.img \
+		-O i386-pc \
+		-c ./grub-early.cfg \
+		$(GRUB2_MODULES)
+	$(CP) $(STAGING_DIR_HOST)/lib/grub/i386-pc/*.img $(KDIR)/grub2/
+	echo '(hd0) $(BIN_DIR)/$(IMG_PREFIX)-embeded-$(1).img' > $(KDIR)/grub2/device.map
+	sed \
+		-e 's#@SERIAL_CONFIG@#$(strip $(GRUB_SERIAL_CONFIG))#g' \
+		-e 's#@TERMINAL_CONFIG@#$(strip $(GRUB_TERMINAL_CONFIG))#g' \
+		-e 's#@CMDLINE@#$(strip $(call Image/cmdline/$(1)) $(BOOTOPTS) $(GRUB_CONSOLE_CMDLINE))#g' \
+		-e 's#@TIMEOUT@#$(GRUB_TIMEOUT)#g' \
+		./grub.cfg > $(KDIR)/root.grub/boot/grub/grub.cfg
+	PADDING="$(CONFIG_TARGET_IMAGES_PAD)" SIGNATURE="$(SIGNATURE)" PATH="$(TARGET_PATH)" ./gen_image_generic.sh \
+		$(BIN_DIR)/$(IMG_PREFIX)-embeded-$(1).img \
+		$(CONFIG_TARGET_KERNEL_PARTSIZE) $(KDIR)/root.grub \
+		$(CONFIG_TARGET_ROOTFS_PARTSIZE) $(KDIR)/root.embeded.$(1) \
+		256
+	grub-bios-setup \
+		--device-map="$(KDIR)/grub2/device.map" \
+		-d "$(KDIR)/grub2" \
+		-r "hd0,msdos1" \
+		"$(BIN_DIR)/$(IMG_PREFIX)-embeded-$(1).img"
+	$(call Image/Build/grub/$(1))
+endef
+
+define Image/Build/gzip_embeded
+	gzip -f9n $(BIN_DIR)/$(IMG_PREFIX)-embeded-$(1).img
+endef
+
 ifneq ($(CONFIG_TARGET_IMAGES_GZIP),)
   define Image/Build/gzip/ext4
 	$(call Image/Build/gzip,ext4)
+	ifneq ($(CONFIG_TARGET_IMAGES_EMBEDED),)
+		$(call Image/Build/embeded,ext4)
+		$(call Image/Build/gzip_embeded,ext4)
+	endif
   endef
   ifneq ($(CONFIG_TARGET_IMAGES_PAD),)
     define Image/Build/gzip/squashfs
