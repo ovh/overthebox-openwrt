@@ -247,8 +247,8 @@ menu "Target Images"
 		depends on TARGET_IMAGES_PAD || TARGET_ROOTFS_EXT4FS
 		default y
 
-	config TARGET_IMAGES_EMBEDED
-		bool "Create an embeded image that contains a copy of the GZip image in /recovery of rootfs"
+	config TARGET_IMAGES_EMBEDDED
+		bool "Create an embedded image that contains a copy of the GZip image in /recovery of rootfs"
 		depends on TARGET_ROOTFS_EXT4FS && TARGET_IMAGES_GZIP
 		default y
 

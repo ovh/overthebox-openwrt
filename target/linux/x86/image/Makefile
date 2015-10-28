@@ -153,16 +153,16 @@ define Image/Build/gzip
 	gzip -f9n $(BIN_DIR)/$(IMG_PREFIX)-rootfs-$(1).img
 endef
 
-define Image/Build/embeded
+define Image/Build/embedded
 	# Copy the base rootfs in a new file
-	$(CP) $(KDIR)/root.$(1) $(KDIR)/root.embeded.$(1)
+	$(CP) $(KDIR)/root.$(1) $(KDIR)/root.embedded.$(1)
 	# Generate debugfs command file
 	echo "mkdir /recovery" > embed_recovery.cmd
 	echo "cd /recovery" >> embed_recovery.cmd
 	echo "write $(BIN_DIR)/$(IMG_PREFIX)-rootfs-$(1).img.gz $(IMG_PREFIX)-rootfs-$(1).img.gz" >> embed_recovery.cmd
-	debugfs -w -f embed_recovery.cmd $(KDIR)/root.embeded.$(1)
+	debugfs -w -f embed_recovery.cmd $(KDIR)/root.embedded.$(1)
 	rm embed_recovery.cmd
-	# Generate the new image using embeded roofs
+	# Generate the new image using embedded roofs
 	# left here because the image builder doesnt need these
 	$(INSTALL_DIR) $(KDIR)/root.grub/boot/grub $(KDIR)/grub2
 	$(CP) $(KDIR)/bzImage $(KDIR)/root.grub/boot/vmlinuz
@@ -173,7 +173,7 @@ define Image/Build/embeded
 		-c ./grub-early.cfg \
 		$(GRUB2_MODULES)
 	$(CP) $(STAGING_DIR_HOST)/lib/grub/i386-pc/*.img $(KDIR)/grub2/
-	echo '(hd0) $(BIN_DIR)/$(IMG_PREFIX)-embeded-$(1).img' > $(KDIR)/grub2/device.map
+	echo '(hd0) $(BIN_DIR)/$(IMG_PREFIX)-embedded-$(1).img' > $(KDIR)/grub2/device.map
 	sed \
 		-e 's#@SERIAL_CONFIG@#$(strip $(GRUB_SERIAL_CONFIG))#g' \
 		-e 's#@TERMINAL_CONFIG@#$(strip $(GRUB_TERMINAL_CONFIG))#g' \
@@ -181,32 +181,32 @@ define Image/Build/embeded
 		-e 's#@TIMEOUT@#$(GRUB_TIMEOUT)#g' \
 		./grub.cfg > $(KDIR)/root.grub/boot/grub/grub.cfg
 	PADDING="$(CONFIG_TARGET_IMAGES_PAD)" SIGNATURE="$(SIGNATURE)" PATH="$(TARGET_PATH)" ./gen_image_generic.sh \
-		$(BIN_DIR)/$(IMG_PREFIX)-embeded-$(1).img \
+		$(BIN_DIR)/$(IMG_PREFIX)-embedded-$(1).img \
 		$(CONFIG_TARGET_KERNEL_PARTSIZE) $(KDIR)/root.grub \
-		$(CONFIG_TARGET_ROOTFS_PARTSIZE) $(KDIR)/root.embeded.$(1) \
+		$(CONFIG_TARGET_ROOTFS_PARTSIZE) $(KDIR)/root.embedded.$(1) \
 		256
 	grub-bios-setup \
 		--device-map="$(KDIR)/grub2/device.map" \
 		-d "$(KDIR)/grub2" \
 		-r "hd0,msdos1" \
-		"$(BIN_DIR)/$(IMG_PREFIX)-embeded-$(1).img"
+		"$(BIN_DIR)/$(IMG_PREFIX)-embedded-$(1).img"
 	$(call Image/Build/grub/$(1))
 endef
 
-define Image/Build/gzip_embeded
-	gzip -f9n $(BIN_DIR)/$(IMG_PREFIX)-embeded-$(1).img
+define Image/Build/gzip_embedded
+	gzip -f9n $(BIN_DIR)/$(IMG_PREFIX)-embedded-$(1).img
 endef
 
 ifneq ($(CONFIG_TARGET_IMAGES_GZIP),)
-  ifneq ($(CONFIG_TARGET_IMAGES_EMBEDED),)
-    define Image/Build/embeded/ext4
-	$(call Image/Build/embeded,ext4)
-	$(call Image/Build/gzip_embeded,ext4)
+  ifneq ($(CONFIG_TARGET_IMAGES_EMBEDDED),)
+    define Image/Build/embedded/ext4
+	$(call Image/Build/embedded,ext4)
+	$(call Image/Build/gzip_embedded,ext4)
     endef
   endif
   define Image/Build/gzip/ext4
 	$(call Image/Build/gzip,ext4)
-	$(call Image/Build/embeded/ext4)
+	$(call Image/Build/embedded/ext4)
   endef
   ifneq ($(CONFIG_TARGET_IMAGES_PAD),)
     define Image/Build/gzip/squashfs
