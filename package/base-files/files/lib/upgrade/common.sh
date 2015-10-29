@@ -227,6 +227,8 @@ default_do_upgrade() {
 
 do_upgrade() {
 	v "Performing system upgrade..."
+	v "Please wait, this might take few minutes."
+	v "Do not reboot or turn off your device, it will reboot automatically when upgrade process is done."
 	if type 'platform_do_upgrade' >/dev/null 2>/dev/null; then
 		platform_do_upgrade "$ARGV"
 	else
