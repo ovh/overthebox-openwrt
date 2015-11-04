@@ -7901,10 +7901,10 @@ index 000000000000..5d761164eb85
 +MODULE_VERSION("0.1");
 diff --git a/net/mptcp/mptcp_ctrl.c b/net/mptcp/mptcp_ctrl.c
 new file mode 100644
-index 000000000000..f8e5c2e1f132
+index 000000000000..b53ddbb0378c
 --- /dev/null
 +++ b/net/mptcp/mptcp_ctrl.c
-@@ -0,0 +1,2675 @@
+@@ -0,0 +1,2677 @@
 +/*
 + *	MPTCP implementation - MPTCP-control
 + *
@@ -10035,8 +10035,10 @@ index 000000000000..f8e5c2e1f132
 +
 +	/* Alloc MPTCP-tw-sock */
 +	mptw = kmem_cache_alloc(mptcp_tw_cache, GFP_ATOMIC);
-+	if (!mptw)
++	if (!mptw) {
++		tw->mptcp_tw = NULL;
 +		return -ENOBUFS;
++	}
 +
 +	atomic_inc(&mpcb->mpcb_refcnt);
 +
@@ -18926,7 +18928,7 @@ index 000000000000..93278f684069
 +MODULE_VERSION("0.89");
 diff --git a/net/mptcp/mptcp_sched.c b/net/mptcp/mptcp_sched.c
 new file mode 100644
-index 000000000000..a93b652bfdb1
+index 000000000000..c18bded5ffad
 --- /dev/null
 +++ b/net/mptcp/mptcp_sched.c
 @@ -0,0 +1,571 @@
@@ -19183,7 +19185,7 @@ index 000000000000..a93b652bfdb1
 +
 +	sk = get_subflow_from_selectors(mpcb, skb, &subflow_is_backup,
 +					zero_wnd_test, &force);
-+	if (!force)
++	if (!force && skb)
 +		/* one used backup sk or one NULL sk where there is no one
 +		 * temporally unavailable unused backup sk
 +		 *
