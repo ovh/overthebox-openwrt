@@ -263,10 +263,10 @@ index a829b77523cf..6a32d8d6b85e 100644
  		struct ip_options_rcu	*opt;
 diff --git a/include/net/mptcp.h b/include/net/mptcp.h
 new file mode 100644
-index 000000000000..67795bd76ab6
+index 000000000000..5ee60d5a9581
 --- /dev/null
 +++ b/include/net/mptcp.h
-@@ -0,0 +1,1523 @@
+@@ -0,0 +1,1524 @@
 +/*
 + *	MPTCP implementation
 + *
@@ -715,6 +715,7 @@ index 000000000000..67795bd76ab6
 +#define MPTCPHDR_JOIN		0x80
 +/* MPTCP flags: TX only */
 +#define MPTCPHDR_INF		0x08
++#define MPTCP_REINJECT		0x10 /* Did we reinject this segment? */
 +
 +struct mptcp_option {
 +	__u8	kind;
@@ -16688,10 +16689,10 @@ index 000000000000..73298b25a716
 +MODULE_VERSION("0.1");
 diff --git a/net/mptcp/mptcp_output.c b/net/mptcp/mptcp_output.c
 new file mode 100644
-index 000000000000..5a422a1e76d1
+index 000000000000..08fb6d80fa27
 --- /dev/null
 +++ b/net/mptcp/mptcp_output.c
-@@ -0,0 +1,1752 @@
+@@ -0,0 +1,1761 @@
 +/*
 + *	MPTCP implementation - Sending side
 + *
@@ -16778,6 +16779,11 @@ index 000000000000..5a422a1e76d1
 +	TCP_SKB_CB(skb)->end_seq = ntohs(*p16) + TCP_SKB_CB(skb)->seq;
 +
 +	return 0;
++}
++
++static bool mptcp_is_reinjected(const struct sk_buff *skb)
++{
++	return TCP_SKB_CB(skb)->mptcp_flags & MPTCP_REINJECT;
 +}
 +
 +static void mptcp_find_and_set_pathmask(const struct sock *meta_sk, struct sk_buff *skb)
@@ -16951,6 +16957,10 @@ index 000000000000..5a422a1e76d1
 +		    (tcb->tcp_flags & TCPHDR_FIN && mptcp_is_data_fin(skb_it) && !skb_it->len))
 +			continue;
 +
++		if (mptcp_is_reinjected(skb_it))
++			continue;
++
++		tcb->mptcp_flags |= MPTCP_REINJECT;
 +		__mptcp_reinject_data(skb_it, meta_sk, sk, clone_it);
 +	}
 +
@@ -17120,10 +17130,10 @@ index 000000000000..5a422a1e76d1
 +		return false;
 +
 +	/* At the subflow-level we need to call again tcp_init_tso_segs. We
-+	 * force this, by setting gso_segs to 0. It has been set to 1 prior to
++	 * force this, by setting pcount to 0. It has been set to 1 prior to
 +	 * the call to mptcp_skb_entail.
 +	 */
-+	skb_shinfo(subskb)->gso_segs = 0;
++	tcp_skb_pcount_set(subskb, 0);
 +
 +	TCP_SKB_CB(skb)->path_mask |= mptcp_pi_to_flag(tp->mptcp->path_index);
 +
