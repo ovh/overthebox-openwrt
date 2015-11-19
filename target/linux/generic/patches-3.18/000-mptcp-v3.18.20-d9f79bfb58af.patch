@@ -2848,7 +2848,7 @@ index 14d02ea905b6..7d734d8af19b 100644
  
  		sk_acceptq_removed(sk);
 diff --git a/net/ipv4/syncookies.c b/net/ipv4/syncookies.c
-index 32b98d0207b4..1042556e14b3 100644
+index 32b98d0207b4..f73b11b4d70b 100644
 --- a/net/ipv4/syncookies.c
 +++ b/net/ipv4/syncookies.c
 @@ -16,6 +16,8 @@
@@ -2871,11 +2871,13 @@ index 32b98d0207b4..1042556e14b3 100644
  {
  	const struct iphdr *iph = ip_hdr(skb);
  	const struct tcphdr *th = tcp_hdr(skb);
-@@ -203,8 +205,24 @@ static inline struct sock *get_cookie_sock(struct sock *sk, struct sk_buff *skb,
+@@ -203,8 +205,26 @@ static inline struct sock *get_cookie_sock(struct sock *sk, struct sk_buff *skb,
  {
  	struct inet_connection_sock *icsk = inet_csk(sk);
  	struct sock *child;
++#ifdef CONFIG_MPTCP
 +	int ret;
++#endif
  
  	child = icsk->icsk_af_ops->syn_recv_sock(sk, skb, req, dst);
 +
@@ -2896,7 +2898,7 @@ index 32b98d0207b4..1042556e14b3 100644
  	if (child)
  		inet_csk_reqsk_queue_add(sk, req, child);
  	else
-@@ -259,6 +277,7 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb)
+@@ -259,6 +279,7 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb)
  {
  	struct ip_options *opt = &TCP_SKB_CB(skb)->header.h4.opt;
  	struct tcp_options_received tcp_opt;
@@ -2904,7 +2906,7 @@ index 32b98d0207b4..1042556e14b3 100644
  	struct inet_request_sock *ireq;
  	struct tcp_request_sock *treq;
  	struct tcp_sock *tp = tcp_sk(sk);
-@@ -285,13 +304,19 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb)
+@@ -285,13 +306,19 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb)
  
  	/* check for timestamp cookie support */
  	memset(&tcp_opt, 0, sizeof(tcp_opt));
@@ -2926,7 +2928,7 @@ index 32b98d0207b4..1042556e14b3 100644
  	if (!req)
  		goto out;
  
-@@ -310,10 +335,15 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb)
+@@ -310,10 +337,15 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb)
  	ireq->sack_ok		= tcp_opt.sack_ok;
  	ireq->wscale_ok		= tcp_opt.wscale_ok;
  	ireq->tstamp_ok		= tcp_opt.saw_tstamp;
@@ -2942,7 +2944,7 @@ index 32b98d0207b4..1042556e14b3 100644
  	/* We throwed the options of the initial SYN away, so we hope
  	 * the ACK carries the same options again (see RFC1122 4.2.3.8)
  	 */
-@@ -348,10 +378,10 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb)
+@@ -348,10 +380,10 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb)
  	/* Try to redo what tcp_v4_send_synack did. */
  	req->window_clamp = tp->window_clamp ? :dst_metric(&rt->dst, RTAX_WINDOW);
  
@@ -5924,7 +5926,7 @@ index e1a9583bb419..c5abfa462afc 100644
  				sk->sk_family = PF_INET;
  				tcp_sync_mss(sk, icsk->icsk_pmtu_cookie);
 diff --git a/net/ipv6/syncookies.c b/net/ipv6/syncookies.c
-index 2f25cb6347ca..71e0178f972e 100644
+index 2f25cb6347ca..69a9e1d52619 100644
 --- a/net/ipv6/syncookies.c
 +++ b/net/ipv6/syncookies.c
 @@ -19,6 +19,8 @@
@@ -5936,11 +5938,13 @@ index 2f25cb6347ca..71e0178f972e 100644
  #include <net/tcp.h>
  
  #define COOKIEBITS 24	/* Upper bits store count */
-@@ -47,8 +49,24 @@ static inline struct sock *get_cookie_sock(struct sock *sk, struct sk_buff *skb,
+@@ -47,8 +49,26 @@ static inline struct sock *get_cookie_sock(struct sock *sk, struct sk_buff *skb,
  {
  	struct inet_connection_sock *icsk = inet_csk(sk);
  	struct sock *child;
++#ifdef CONFIG_MPTCP
 +	int ret;
++#endif
  
  	child = icsk->icsk_af_ops->syn_recv_sock(sk, skb, req, dst);
 +
@@ -5961,7 +5965,7 @@ index 2f25cb6347ca..71e0178f972e 100644
  	if (child)
  		inet_csk_reqsk_queue_add(sk, req, child);
  	else
-@@ -130,7 +148,8 @@ u32 __cookie_v6_init_sequence(const struct ipv6hdr *iph,
+@@ -130,7 +150,8 @@ u32 __cookie_v6_init_sequence(const struct ipv6hdr *iph,
  }
  EXPORT_SYMBOL_GPL(__cookie_v6_init_sequence);
  
@@ -5971,7 +5975,7 @@ index 2f25cb6347ca..71e0178f972e 100644
  {
  	const struct ipv6hdr *iph = ipv6_hdr(skb);
  	const struct tcphdr *th = tcp_hdr(skb);
-@@ -155,6 +174,7 @@ EXPORT_SYMBOL_GPL(__cookie_v6_check);
+@@ -155,6 +176,7 @@ EXPORT_SYMBOL_GPL(__cookie_v6_check);
  struct sock *cookie_v6_check(struct sock *sk, struct sk_buff *skb)
  {
  	struct tcp_options_received tcp_opt;
@@ -5979,7 +5983,7 @@ index 2f25cb6347ca..71e0178f972e 100644
  	struct inet_request_sock *ireq;
  	struct tcp_request_sock *treq;
  	struct ipv6_pinfo *np = inet6_sk(sk);
-@@ -181,20 +201,34 @@ struct sock *cookie_v6_check(struct sock *sk, struct sk_buff *skb)
+@@ -181,20 +203,34 @@ struct sock *cookie_v6_check(struct sock *sk, struct sk_buff *skb)
  
  	/* check for timestamp cookie support */
  	memset(&tcp_opt, 0, sizeof(tcp_opt));
@@ -6016,7 +6020,7 @@ index 2f25cb6347ca..71e0178f972e 100644
  	if (security_inet_conn_request(sk, skb, req))
  		goto out_free;
  
-@@ -255,10 +289,10 @@ struct sock *cookie_v6_check(struct sock *sk, struct sk_buff *skb)
+@@ -255,10 +291,10 @@ struct sock *cookie_v6_check(struct sock *sk, struct sk_buff *skb)
  	}
  
  	req->window_clamp = tp->window_clamp ? :dst_metric(dst, RTAX_WINDOW);
