@@ -335,6 +335,7 @@ dhcp_host_add() {
 	[ "$broadcast" = "0" ] && broadcast=
 
 	xappend "--dhcp-host=$macs${networkid:+,net:$networkid}${broadcast:+,set:needs-broadcast}${tag:+,set:$tag}${ip:+,$ip}${name:+,$name}"
+	xappend "--dhcp-mac=set:${tag}host,$macs"
 }
 
 dhcp_tag_add() {
@@ -432,6 +433,9 @@ dhcp_add() {
 	eval "$(ipcalc.sh "${subnet%%/*}" $netmask $start $limit)"
 	if [ "$dynamicdhcp" = "0" ]; then END="static"; fi
 	xappend "--dhcp-range=$networkid,$START,$END,$NETMASK,$leasetime${options:+ $options}"
+
+	xappend "--tag-if=set:customhost,tag:${net}host"
+	xappend "--tag-if=set:ignore,tag:!${net}host,tag:$net"
 
 	dhcp_option_add "$cfg" "$networkid"
 }
@@ -614,6 +618,7 @@ start_service() {
 	if [ "$odhcpd_is_active" != "1" ]; then
 		config_foreach dhcp_add dhcp
 	fi
+	xappend "--dhcp-ignore=tag:ignore,tag:customhost"
 
 	echo >> $CONFIGFILE
 	config_foreach dhcp_cname_add cname
