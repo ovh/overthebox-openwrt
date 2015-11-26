@@ -159,7 +159,7 @@ define Image/Build/embedded
 	# Generate debugfs command file
 	echo "mkdir /recovery" > embed_recovery.cmd
 	echo "cd /recovery" >> embed_recovery.cmd
-	echo "write $(BIN_DIR)/$(IMG_PREFIX)-rootfs-$(1).img.gz $(IMG_PREFIX)-rootfs-$(1).img.gz" >> embed_recovery.cmd
+	echo "write $(BIN_DIR)/$(IMG_PREFIX)-combined-$(1).img.gz $(IMG_PREFIX)-combined-$(1).img.gz" >> embed_recovery.cmd
 	debugfs -w -f embed_recovery.cmd $(KDIR)/root.embedded.$(1)
 	rm embed_recovery.cmd
 	# Generate the new image using embedded roofs
