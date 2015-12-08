@@ -54,6 +54,10 @@ ifneq ($(CONFIG_GRUB_IMAGES),)
     root=$(ROOTPART) rootfstype=ext4 rootwait
   endef
 
+  define Image/cmdline/rescue
+    root=/dev/sda2 rootfstype=ext4 rootwait
+  endef
+
   define Image/cmdline/jffs2-64k
     block2mtd.block2mtd=$(ROOTPART),65536,rootfs,5 root=/dev/mtdblock0 rootfstype=jffs2 rootwait
   endef
@@ -197,7 +201,91 @@ define Image/Build/gzip_embedded
 	gzip -f9n $(BIN_DIR)/$(IMG_PREFIX)-embedded-$(1).img
 endef
 
+define Image/Build/rescue
+	# Copy the base rootfs in a new file
+	$(CP) $(KDIR)/root.$(1) $(KDIR)/root.rescue.$(1)
+
+	# Generate temp recovery cmd file to put in rescue fs
+	echo "#!/bin/sh" > tmp.rc.local
+	echo "/sbin/overthebox_usb_recovery" >> tmp.rc.local
+	echo "exit 0;" >> tmp.rc.local 
+
+	echo "#!/bin/sh" > tmp.otb_recue
+	echo "if dmidecode | grep -ic DE3815TYKH; then" >> tmp.otb_recue
+	echo "	echo -n 'Flashing firmware, please wait...'" >> tmp.otb_recue
+	echo "	if gunzip -c /recovery/openwrt-x86-64-combined-ext4.img.gz | dd of=/dev/mmcblk0; then" >> tmp.otb_recue
+	echo "		sync && echo 'done';" >> tmp.otb_recue
+	echo "		halt;" >> tmp.otb_recue
+	echo "		exit 0;" >> tmp.otb_recue
+	echo "	fi" >> tmp.otb_recue
+	echo "fi" >> tmp.otb_recue
+	echo 'echo "NUC OTB not detected, Starting manual prompt"' >> tmp.otb_recue
+	echo 'echo "Browse for your OTB img file and dd it to your desired device"' >> tmp.otb_recue
+	echo 'echo "Example compressed img: gunzip -c /tmp/openwrt-x86-64-combined-ext4.img.gz | dd of=/dev/sdx"' >> tmp.otb_recue
+	echo 'echo "Example non compressed: dd if=/tmp/openwrt-x86-64-combined-ext4.img of=/dev/sdx"' >> tmp.otb_recue
+	echo 'echo "Be patient and do not interrupt, copying process may take a while"' >> tmp.otb_recue
+	echo 'echo "Good Luck :-)"' >> tmp.otb_recue
+	echo 'exit 1' >> tmp.otb_recue
+
+	# Generate debugfs command file
+	echo "mkdir /recovery" > rescue_recovery.cmd
+	echo "cd /recovery" >> rescue_recovery.cmd
+	echo "write $(BIN_DIR)/$(IMG_PREFIX)-combined-$(1).img.gz $(IMG_PREFIX)-combined-$(1).img.gz" >> rescue_recovery.cmd
+	echo "unlink /etc/uci-defaults" >> rescue_recovery.cmd
+	echo "cd /sbin" >> rescue_recovery.cmd
+	echo "write tmp.otb_recue overthebox_usb_recovery" >> rescue_recovery.cmd
+	echo "set_inode_field overthebox_usb_recovery mode 0100744" >> rescue_recovery.cmd
+	echo "cd /etc" >> rescue_recovery.cmd
+	echo "rm rc.local" >> rescue_recovery.cmd
+	echo "write tmp.rc.local rc.local" >> rescue_recovery.cmd
+	echo "set_inode_field rc.local mode 0100644" >> rescue_recovery.cmd
+	debugfs -w -f rescue_recovery.cmd $(KDIR)/root.rescue.$(1)
+	rm rescue_recovery.cmd
+	rm tmp.otb_recue
+	rm tmp.rc.local
+	# Generate the new image using rescue roofs
+	# left here because the image builder doesnt need these
+	$(INSTALL_DIR) $(KDIR)/root.grub/boot/grub $(KDIR)/grub2
+	$(CP) $(KDIR)/bzImage $(KDIR)/root.grub/boot/vmlinuz
+	grub-mkimage \
+		-d $(STAGING_DIR_HOST)/lib/grub/i386-pc \
+		-o $(KDIR)/grub2/core.img \
+		-O i386-pc \
+		-c ./grub-early.cfg \
+		$(GRUB2_MODULES)
+	$(CP) $(STAGING_DIR_HOST)/lib/grub/i386-pc/*.img $(KDIR)/grub2/
+	echo '(hd0) $(BIN_DIR)/$(IMG_PREFIX)-rescue-$(1).img' > $(KDIR)/grub2/device.map
+	sed \
+		-e 's#@SERIAL_CONFIG@#$(strip $(GRUB_SERIAL_CONFIG))#g' \
+		-e 's#@TERMINAL_CONFIG@#$(strip $(GRUB_TERMINAL_CONFIG))#g' \
+		-e 's#@CMDLINE@#$(strip $(call Image/cmdline/rescue) $(BOOTOPTS) $(GRUB_CONSOLE_CMDLINE))#g' \
+		-e 's#@TIMEOUT@#$(GRUB_TIMEOUT)#g' \
+		-e 's#OpenWrt#OverTheBox USB live recue#g' \
+		./grub.cfg > $(KDIR)/root.grub/boot/grub/grub.cfg
+	PADDING="$(CONFIG_TARGET_IMAGES_PAD)" SIGNATURE="$(SIGNATURE)" PATH="$(TARGET_PATH)" ./gen_image_generic.sh \
+		$(BIN_DIR)/$(IMG_PREFIX)-rescue-$(1).img \
+		$(CONFIG_TARGET_KERNEL_PARTSIZE) $(KDIR)/root.grub \
+		$(CONFIG_TARGET_ROOTFS_PARTSIZE) $(KDIR)/root.rescue.$(1) \
+		256
+	grub-bios-setup \
+		--device-map="$(KDIR)/grub2/device.map" \
+		-d "$(KDIR)/grub2" \
+		-r "hd0,msdos1" \
+		"$(BIN_DIR)/$(IMG_PREFIX)-rescue-$(1).img"
+	$(call Image/Build/grub/$(1))
+endef
+
+define Image/Build/gzip_rescue
+	gzip -f9n $(BIN_DIR)/$(IMG_PREFIX)-rescue-$(1).img
+endef
+
 ifneq ($(CONFIG_TARGET_IMAGES_GZIP),)
+  ifneq ($(CONFIG_TARGET_IMAGES_RESCUE),)
+    define Image/Build/rescue/ext4
+	$(call Image/Build/rescue,ext4)
+	$(call Image/Build/gzip_rescue,ext4)
+    endef
+  endif
   ifneq ($(CONFIG_TARGET_IMAGES_EMBEDDED),)
     define Image/Build/embedded/ext4
 	$(call Image/Build/embedded,ext4)
@@ -207,6 +295,7 @@ ifneq ($(CONFIG_TARGET_IMAGES_GZIP),)
   define Image/Build/gzip/ext4
 	$(call Image/Build/gzip,ext4)
 	$(call Image/Build/embedded/ext4)
+	$(call Image/Build/rescue/ext4)
   endef
   ifneq ($(CONFIG_TARGET_IMAGES_PAD),)
     define Image/Build/gzip/squashfs
