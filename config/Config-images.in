@@ -252,6 +252,11 @@ menu "Target Images"
 		depends on TARGET_ROOTFS_EXT4FS && TARGET_IMAGES_GZIP
 		default y
 
+	config TARGET_IMAGES_RESCUE
+		bool "Create a rescue USB image to restore system on broken OverTheBox"
+		depends on TARGET_ROOTFS_EXT4FS && TARGET_IMAGES_GZIP
+		default y
+
 	comment "Image Options"
 
 	source "target/linux/*/image/Config.in"
