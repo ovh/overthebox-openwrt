@@ -10556,7 +10556,7 @@ index 000000000000..1e1fb53dbc32
 +	if (mptcp_register_scheduler(&mptcp_sched_default))
 +		goto register_sched_failed;
 +
-+	pr_info("MPTCP: Stable release v0.90.0");
++	pr_info("MPTCP: Stable release v0.90.0-41341cef9208");
 +
 +	mptcp_init_failed = false;
 +
