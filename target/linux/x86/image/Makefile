@@ -41,8 +41,10 @@ ifneq ($(GRUB_TERMINALS),)
 endif
 
 SIGNATURE:=$(shell dd if=/dev/urandom bs=4 count=1 2>/dev/null | hexdump -v -e '"%08x"')
+
 ROOTPART:=$(call qstrip,$(CONFIG_TARGET_ROOTFS_PARTNAME))
 ROOTPART:=$(if $(ROOTPART),$(ROOTPART),PARTUUID=$(SIGNATURE)-02)
+EFI_ROOTPART:=$(strip $(shell uuidgen | tr '[a-z]' '[A-Z]'))
 
 GRUB_TIMEOUT:=$(call qstrip,$(CONFIG_GRUB_TIMEOUT))
 
@@ -69,6 +71,54 @@ ifneq ($(CONFIG_GRUB_IMAGES),)
   define Image/cmdline/squashfs
     block2mtd.block2mtd=$(ROOTPART),65536,rootfs,5 root=/dev/mtdblock0 rootfstype=squashfs rootwait
   endef
+
+  define Image/cmdline/efi
+    $(subst $(SIGNATURE)-02,$2,$(call Image/cmdline/$(1)))
+  endef
+
+ifneq ($(CONFIG_EFI_IMAGES),)
+  define Image/Build/efi
+	# left here because the image builder doesnt need these
+	$(INSTALL_DIR) $(KDIR)/root.grub/boot/grub $(KDIR)/grub2
+	$(CP) $(KDIR)/bzImage $(KDIR)/root.grub/boot/vmlinuz
+	grub-mkimage \
+		-d $(STAGING_DIR_HOST)/lib/grub/i386-pc \
+		-o $(KDIR)/grub2/core.img \
+		-O i386-pc \
+		-c ./grub-early.cfg \
+		$(GRUB2_MODULES)
+	$(CP) $(STAGING_DIR_HOST)/lib/grub/i386-pc/*.img $(KDIR)/grub2/
+	echo '(hd0) $(BIN_DIR)/$(IMG_PREFIX)-uefi-gpt-$(1).img' > $(KDIR)/grub2/device.map
+	sed \
+		-e 's#@SERIAL_CONFIG@#$(strip $(GRUB_SERIAL_CONFIG))#g' \
+		-e 's#@TERMINAL_CONFIG@#$(strip $(GRUB_TERMINAL_CONFIG))#g' \
+		-e 's#@CMDLINE@#$(strip $(call Image/cmdline/efi,$(1),$(EFI_ROOTPART)) $(BOOTOPTS) $(GRUB_CONSOLE_CMDLINE))#g' \
+		-e 's#@TIMEOUT@#$(GRUB_TIMEOUT)#g' \
+		./grub.cfg > $(KDIR)/root.grub/boot/grub/grub.cfg
+	PADDING="$(CONFIG_TARGET_IMAGES_PAD)" SIGNATURE="$(SIGNATURE)" PATH="$(TARGET_PATH)" ./gen_image_generic.sh \
+		$(BIN_DIR)/$(IMG_PREFIX)-uefi-gpt-$(1).img \
+		$(CONFIG_TARGET_KERNEL_PARTSIZE) $(KDIR)/root.grub \
+		$(CONFIG_TARGET_ROOTFS_PARTSIZE) $(KDIR)/root.$(1) \
+		256
+	grub-bios-setup \
+		--device-map="$(KDIR)/grub2/device.map" \
+		-d "$(KDIR)/grub2" \
+		-r "hd0,msdos1" \
+		"$(BIN_DIR)/$(IMG_PREFIX)-uefi-gpt-$(1).img"
+	# Create EFI vfat image
+	rm $(KDIR)/kernel.efi || true
+	echo "vmlinuz.efi $(strip $(call Image/cmdline/efi,$(1),$(EFI_ROOTPART))) $(BOOTOPTS) $(GRUB_CONSOLE_CMDLINE))" > $(KDIR)/startup.nsh
+	mkfs.fat -C $(KDIR)/kernel.efi -S 512 $(shell echo $$(( $(CONFIG_TARGET_KERNEL_PARTSIZE) * 1024 * 1024 )))
+	mcopy -i "$(KDIR)/kernel.efi" "$(KDIR)/bzImage" ::vmlinuz.efi
+	mcopy -i "$(KDIR)/kernel.efi" "$(KDIR)/startup.nsh" ::startup.nsh
+	# Append EFI boot image to MBR grub image
+	dd if="$(KDIR)/root.efi" bs=512 >> "$(BIN_DIR)/$(IMG_PREFIX)-uefi-gpt-$(1).img"
+	# Add 33 block for GPT
+	dd if="/dev/zero" bs=512 count=33 >> "$(BIN_DIR)/$(IMG_PREFIX)-uefi-gpt-$(1).img"
+	# Set the new EFI partition (data are already present on image) and change PARTUUID od root partition
+	(echo n; echo 3; echo ; echo ; echo EF00; echo x; echo c; echo 2; echo $(EFI_ROOTPART); echo w; echo Y) | gdisk "$(BIN_DIR)/$(IMG_PREFIX)-uefi-gpt-$(1).img"
+  endef
+endif
 
   define Image/Build/grub2
 	# left here because the image builder doesnt need these
@@ -279,6 +329,10 @@ define Image/Build/gzip_rescue
 	gzip -f9n $(BIN_DIR)/$(IMG_PREFIX)-rescue-$(1).img
 endef
 
+define Image/Build/gzip_efi
+	gzip -f9n $(BIN_DIR)/$(IMG_PREFIX)-uefi-gpt-$(1).img
+endef
+
 ifneq ($(CONFIG_TARGET_IMAGES_GZIP),)
   ifneq ($(CONFIG_TARGET_IMAGES_RESCUE),)
     define Image/Build/rescue/ext4
@@ -362,6 +416,7 @@ define Image/Build
 	$(call Image/Build/$(1))
   ifneq ($(1),iso)
 	$(call Image/Build/grub2,$(1))
+	$(call Image/Build/efi,$(1))
 	$(call Image/Build/vdi,$(1))
 	$(call Image/Build/vmdk,$(1))
 	$(CP) $(KDIR)/root.$(1) $(BIN_DIR)/$(IMG_PREFIX)-rootfs-$(1).img
@@ -370,6 +425,9 @@ define Image/Build
   endif
 	$(CP) $(KDIR)/bzImage $(BIN_DIR)/$(IMG_PREFIX)-vmlinuz
 	$(call Image/Build/gzip/$(1))
+ifeq ($(CONFIG_EFI_IMAGES),y)
+	$(call Image/Build/gzip_efi,$(1))
+endif
 	$(call Image/Build/Profile/$(PROFILE),$(1))
 ifeq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),y)
 	$(call Image/Build/Initramfs)
