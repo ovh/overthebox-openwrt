@@ -43,7 +43,7 @@ endif
 SIGNATURE:=$(shell dd if=/dev/urandom bs=4 count=1 2>/dev/null | hexdump -v -e '"%08x"')
 ROOTPART:=$(call qstrip,$(CONFIG_TARGET_ROOTFS_PARTNAME))
 ROOTPART:=$(if $(ROOTPART),$(ROOTPART),PARTUUID=$(SIGNATURE)-02)
-
+EFI_ROOTPART:=$(strip $(shell uuidgen | tr '[a-z]' '[A-Z]'))
 GRUB_TIMEOUT:=$(call qstrip,$(CONFIG_GRUB_TIMEOUT))
 
 ifneq ($(CONFIG_GRUB_IMAGES),)
@@ -69,6 +69,27 @@ ifneq ($(CONFIG_GRUB_IMAGES),)
   define Image/cmdline/squashfs
     block2mtd.block2mtd=$(ROOTPART),65536,rootfs,5 root=/dev/mtdblock0 rootfstype=squashfs rootwait
   endef
+
+  define Image/cmdline/efi
+    $(subst $(SIGNATURE)-02,$2,$(call Image/cmdline/$(1)))
+  endef
+
+ifneq ($(CONFIG_EFI_IMAGES),)
+  define Image/Build/efi
+  	$(CP) "$(BIN_DIR)/$(IMG_PREFIX)-combined-$(1).img" "$(BIN_DIR)/$(IMG_PREFIX)-combined-$(1)-efi.img"
+	# Adding 33 blocks to efi immage to allow gpt to write backup
+	dd if=/dev/zero bs=512 count=33 >> "$(BIN_DIR)/$(IMG_PREFIX)-combined-$(1)-efi.img"
+	# Convert boot part to EFI
+	(echo t; echo 1; echo EF00; echo x; echo c; echo 2; echo $(EFI_ROOTPART); echo w; echo Y) | gdisk "$(BIN_DIR)/$(IMG_PREFIX)-combined-$(1)-efi.img"
+	echo "vmlinuz.efi $(strip $(call Image/cmdline/efi,$(1),$(EFI_ROOTPART))) $(BOOTOPTS) $(GRUB_CONSOLE_CMDLINE))" > $(KDIR)/startup.nsh
+	# Create EFI vfat image
+	rm $(KDIR)/root.efi || true
+	mkfs.fat -C $(KDIR)/root.efi -S 512 $(CONFIG_TARGET_KERNEL_PARTSIZE)000
+	mcopy -i "$(KDIR)/root.efi" "$(KDIR)/bzImage" ::vmlinuz.efi
+	mcopy -i "$(KDIR)/root.efi" "$(KDIR)/startup.nsh" ::startup.nsh
+	dd if="$(KDIR)/root.efi" of="$(BIN_DIR)/$(IMG_PREFIX)-combined-$(1)-efi.img" bs=512 seek=512 conv=notrunc
+  endef
+endif
 
   define Image/Build/grub2
 	# left here because the image builder doesnt need these
@@ -98,6 +119,7 @@ ifneq ($(CONFIG_GRUB_IMAGES),)
 		-d "$(KDIR)/grub2" \
 		-r "hd0,msdos1" \
 		"$(BIN_DIR)/$(IMG_PREFIX)-combined-$(1).img"
+	$(call Image/Build/efi,$(1))
 	$(call Image/Build/grub/$(1))
   endef
 endif
