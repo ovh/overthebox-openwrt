@@ -54,14 +54,16 @@ CONFIGURE_ARGS += \
 	--disable-nls \
 	--disable-device-mapper \
 	--disable-libzfs \
-	--disable-grub-mkfont
+	--disable-grub-mkfont \
+	--with-platform=efi
 
 HOST_CONFIGURE_ARGS += \
 	--target=$(REAL_GNU_TARGET_NAME) \
 	--sbindir="$(STAGING_DIR_HOST)/bin" \
 	--disable-werror \
 	--disable-libzfs \
-	--disable-nls
+	--disable-nls \
+	--with-platform=efi
 
 HOST_MAKE_FLAGS += \
 	TARGET_RANLIB=$(TARGET_RANLIB) \
