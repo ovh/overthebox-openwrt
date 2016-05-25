@@ -229,6 +229,7 @@ menu "Target Images"
 		depends on TARGET_x86_64 || (TARGET_x86 && !TARGET_x86_rdc) 
 		depends on TARGET_ROOTFS_EXT4FS || TARGET_ROOTFS_ISO || TARGET_ROOTFS_JFFS2 || TARGET_ROOTFS_SQUASHFS
 		select GRUB_IMAGES
+		select PACKAGE_grub2-efi
 		default y
 
 	config VDI_IMAGES
