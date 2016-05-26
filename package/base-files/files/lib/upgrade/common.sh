@@ -67,10 +67,15 @@ run_ramfs() { # <command> [...]
 	install_bin /usr/sbin/ubirsvol
 	install_bin /usr/sbin/ubirmvol
 	install_bin /usr/sbin/ubimkvol
+	install_bin /usr/sbin/blkid
+	install_bin /usr/bin/tr
 	for file in $RAMFS_COPY_BIN; do
 		install_bin ${file//:/ }
 	done
 	install_file /etc/resolv.conf /lib/*.sh /lib/functions/*.sh /lib/upgrade/*.sh $RAMFS_COPY_DATA
+
+	install_file /lib/lib* /lib/ld* $RAMFS_COPY_DATA
+	install_file /usr/lib/lib* $RAMFS_COPY_DATA
 
 	[ -L "/lib64" ] && ln -s /lib $RAM_ROOT/lib64
 
