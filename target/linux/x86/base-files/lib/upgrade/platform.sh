@@ -14,6 +14,25 @@ platform_export_bootpart() {
 		esac
 
 		case "$disk" in
+			PARTUUID=[A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9]-[A-F0-9][A-F0-9][A-F0-9][A-F0-9]-[A-F0-9][A-F0-9][A-F0-9][A-F0-9]-[A-F0-9][A-F0-9][A-F0-9][A-F0-9]-[A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9])
+				uuid="${disk#PARTUUID=}"
+				uuid="${uuid}"
+				export BOOTPART=$(blkid | grep "PARTUUID=" | {
+					local pdisk puuid
+					while read -r line
+					do
+					        pdisk=${line%%:*}
+					        puuid=${line##*PARTUUID=\"}
+					        puuid=${puuid%%\"*}
+						puuid=$(echo "$puuid" | tr '[a-z]' '[A-Z]')
+						if [ "$uuid" = "$puuid" ]; then
+							echo -n "${pdisk%[0-9]}1"
+							return 0
+						fi
+					done
+				})
+				return 0
+			;;
 			PARTUUID=[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]-02)
 				uuid="${disk#PARTUUID=}"
 				uuid="${uuid%-02}"
