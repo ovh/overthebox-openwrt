@@ -136,7 +136,7 @@ ifneq ($(CONFIG_EFI_IMAGES),)
 	# Set the new EFI partition (data are already present on image) and change PARTUUID od root partition
 	(echo n; echo 3; echo ; echo ; echo EF00; echo x; echo c; echo 2; echo $(EFI_ROOTPART); echo w; echo Y) | gdisk "$(BIN_DIR)/$(IMG_PREFIX)-uefi-gpt-$(1).img"
 	# Add GPT Grub partition for legacy bios
-	dd if=/dev/zero bs=512 count=2048 conv=notrunc >> /home/sduponch/overthebox-openwrt/bin/x86-glibc/openwrt-x86-64-uefi-gpt-ext4.img
+	dd if=/dev/zero bs=512 count=2048 conv=notrunc >> "$(BIN_DIR)/$(IMG_PREFIX)-uefi-gpt-$(1).img"
 	(echo x; echo e; echo m; echo n; echo 4; echo ; echo ; echo EF02; echo w; echo Y; echo Y) | gdisk "$(BIN_DIR)/$(IMG_PREFIX)-uefi-gpt-$(1).img"
 	grub-bios-setup \
 		--device-map="$(KDIR)/grub2/device.map" \
