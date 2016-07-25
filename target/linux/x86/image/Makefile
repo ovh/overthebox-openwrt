@@ -289,7 +289,7 @@ define Image/Build/rescue
 	echo "#!/bin/sh" > tmp.otb_recue
 	echo "if dmidecode | grep -ic DE3815TYKH; then" >> tmp.otb_recue
 	echo "	echo -n 'Flashing firmware, please wait...'" >> tmp.otb_recue
-	echo "	if gunzip -c /recovery/openwrt-x86-64-combined-ext4.img.gz | dd of=/dev/mmcblk0; then" >> tmp.otb_recue
+	echo "	if gunzip -c /recovery/openwrt-x86-64-combined-$(1).img.gz | dd of=/dev/mmcblk0; then" >> tmp.otb_recue
 	echo "		sync && echo 'done';" >> tmp.otb_recue
 	echo "		halt;" >> tmp.otb_recue
 	echo "		exit 0;" >> tmp.otb_recue
@@ -297,8 +297,8 @@ define Image/Build/rescue
 	echo "fi" >> tmp.otb_recue
 	echo 'echo "NUC OTB not detected, Starting manual prompt"' >> tmp.otb_recue
 	echo 'echo "Browse for your OTB img file and dd it to your desired device"' >> tmp.otb_recue
-	echo 'echo "Example compressed img: gunzip -c /tmp/openwrt-x86-64-combined-ext4.img.gz | dd of=/dev/sdx"' >> tmp.otb_recue
-	echo 'echo "Example non compressed: dd if=/tmp/openwrt-x86-64-combined-ext4.img of=/dev/sdx"' >> tmp.otb_recue
+	echo 'echo "Example compressed img: gunzip -c /tmp/openwrt-x86-64-combined-$(1).img.gz | dd of=/dev/sdx"' >> tmp.otb_recue
+	echo 'echo "Example non compressed: dd if=/tmp/openwrt-x86-64-combined-$(1).img of=/dev/sdx"' >> tmp.otb_recue
 	echo 'echo "Be patient and do not interrupt, copying process may take a while"' >> tmp.otb_recue
 	echo 'echo "Good Luck :-)"' >> tmp.otb_recue
 	echo 'exit 1' >> tmp.otb_recue
@@ -365,6 +365,10 @@ ifneq ($(CONFIG_TARGET_IMAGES_GZIP),)
 	$(call Image/Build/rescue,ext4)
 	$(call Image/Build/gzip_rescue,ext4)
     endef
+    define Image/Build/rescue/squashfs
+	$(call Image/Build/rescue,squashfs)
+	$(call Image/Build/gzip_rescue,squashfs)
+    endef
   endif
   ifneq ($(CONFIG_TARGET_IMAGES_EMBEDDED),)
     define Image/Build/embedded/ext4
@@ -380,6 +384,7 @@ ifneq ($(CONFIG_TARGET_IMAGES_GZIP),)
   ifneq ($(CONFIG_TARGET_IMAGES_PAD),)
     define Image/Build/gzip/squashfs
 	$(call Image/Build/gzip,squashfs)
+	$(call Image/Build/rescue/squashfs)
     endef
     define Image/Build/gzip/jffs2-64k
 	$(call Image/Build/gzip,jffs2-64k)
