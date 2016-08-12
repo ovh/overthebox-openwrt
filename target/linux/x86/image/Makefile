@@ -279,7 +279,7 @@ endef
 
 define Image/Build/rescue
 	# Copy the base rootfs in a new file
-	$(CP) $(KDIR)/root.$(1) $(KDIR)/root.rescue.$(1)
+	$(CP) $(KDIR)/root.$(1) $(KDIR)/root.rescue-$(2).$(1)
 
 	# Generate temp recovery cmd file to put in rescue fs
 	echo "#!/bin/sh" > tmp.rc.local
@@ -289,7 +289,7 @@ define Image/Build/rescue
 	echo "#!/bin/sh" > tmp.otb_recue
 	echo "if dmidecode | grep -ic DE3815TYKH; then" >> tmp.otb_recue
 	echo "	echo -n 'Flashing firmware, please wait...'" >> tmp.otb_recue
-	echo "	if gunzip -c /recovery/openwrt-x86-64-combined-$(1).img.gz | dd of=/dev/mmcblk0; then" >> tmp.otb_recue
+	echo "	if gunzip -c /recovery/openwrt-x86-64-combined-$(2).img.gz | dd of=/dev/mmcblk0; then" >> tmp.otb_recue
 	echo "		sync && echo 'done';" >> tmp.otb_recue
 	echo "		halt;" >> tmp.otb_recue
 	echo "		exit 0;" >> tmp.otb_recue
@@ -297,8 +297,8 @@ define Image/Build/rescue
 	echo "fi" >> tmp.otb_recue
 	echo 'echo "NUC OTB not detected, Starting manual prompt"' >> tmp.otb_recue
 	echo 'echo "Browse for your OTB img file and dd it to your desired device"' >> tmp.otb_recue
-	echo 'echo "Example compressed img: gunzip -c /tmp/openwrt-x86-64-combined-$(1).img.gz | dd of=/dev/sdx"' >> tmp.otb_recue
-	echo 'echo "Example non compressed: dd if=/tmp/openwrt-x86-64-combined-$(1).img of=/dev/sdx"' >> tmp.otb_recue
+	echo 'echo "Example compressed img: gunzip -c /tmp/openwrt-x86-64-combined-$(2).img.gz | dd of=/dev/sdx"' >> tmp.otb_recue
+	echo 'echo "Example non compressed: dd if=/tmp/openwrt-x86-64-combined-$(2).img of=/dev/sdx"' >> tmp.otb_recue
 	echo 'echo "Be patient and do not interrupt, copying process may take a while"' >> tmp.otb_recue
 	echo 'echo "Good Luck :-)"' >> tmp.otb_recue
 	echo 'exit 1' >> tmp.otb_recue
@@ -306,7 +306,7 @@ define Image/Build/rescue
 	# Generate debugfs command file
 	echo "mkdir /recovery" > rescue_recovery.cmd
 	echo "cd /recovery" >> rescue_recovery.cmd
-	echo "write $(BIN_DIR)/$(IMG_PREFIX)-combined-$(1).img.gz $(IMG_PREFIX)-combined-$(1).img.gz" >> rescue_recovery.cmd
+	echo "write $(BIN_DIR)/$(IMG_PREFIX)-combined-$(2).img.gz $(IMG_PREFIX)-combined-$(2).img.gz" >> rescue_recovery.cmd
 	echo "unlink /etc/uci-defaults" >> rescue_recovery.cmd
 	echo "cd /sbin" >> rescue_recovery.cmd
 	echo "write tmp.otb_recue overthebox_usb_recovery" >> rescue_recovery.cmd
@@ -315,7 +315,7 @@ define Image/Build/rescue
 	echo "rm rc.local" >> rescue_recovery.cmd
 	echo "write tmp.rc.local rc.local" >> rescue_recovery.cmd
 	echo "set_inode_field rc.local mode 0100644" >> rescue_recovery.cmd
-	debugfs -w -f rescue_recovery.cmd $(KDIR)/root.rescue.$(1)
+	debugfs -w -f rescue_recovery.cmd $(KDIR)/root.rescue-$(2).$(1)
 	rm rescue_recovery.cmd
 	rm tmp.otb_recue
 	rm tmp.rc.local
@@ -330,7 +330,7 @@ define Image/Build/rescue
 		-c ./grub-early.cfg \
 		$(GRUB2_MODULES)
 	$(CP) $(STAGING_DIR_HOST)/lib/grub/i386-pc/*.img $(KDIR)/grub2/
-	echo '(hd0) $(BIN_DIR)/$(IMG_PREFIX)-rescue-$(1).img' > $(KDIR)/grub2/device.map
+	echo '(hd0) $(BIN_DIR)/$(IMG_PREFIX)-rescue-$(2).img' > $(KDIR)/grub2/device.map
 	sed \
 		-e 's#@SERIAL_CONFIG@#$(strip $(GRUB_SERIAL_CONFIG))#g' \
 		-e 's#@TERMINAL_CONFIG@#$(strip $(GRUB_TERMINAL_CONFIG))#g' \
@@ -339,15 +339,15 @@ define Image/Build/rescue
 		-e 's#OpenWrt#OverTheBox USB live recue#g' \
 		./grub.cfg > $(KDIR)/root.grub/boot/grub/grub.cfg
 	PADDING="$(CONFIG_TARGET_IMAGES_PAD)" SIGNATURE="$(SIGNATURE)" PATH="$(TARGET_PATH)" ./gen_image_generic.sh \
-		$(BIN_DIR)/$(IMG_PREFIX)-rescue-$(1).img \
+		$(BIN_DIR)/$(IMG_PREFIX)-rescue-$(2).img \
 		$(CONFIG_TARGET_KERNEL_PARTSIZE) $(KDIR)/root.grub \
-		$(CONFIG_TARGET_ROOTFS_PARTSIZE) $(KDIR)/root.rescue.$(1) \
+		$(CONFIG_TARGET_ROOTFS_PARTSIZE) $(KDIR)/root.rescue-$(2).$(1) \
 		256
 	grub-bios-setup \
 		--device-map="$(KDIR)/grub2/device.map" \
 		-d "$(KDIR)/grub2" \
 		-r "hd0,msdos1" \
-		"$(BIN_DIR)/$(IMG_PREFIX)-rescue-$(1).img"
+		"$(BIN_DIR)/$(IMG_PREFIX)-rescue-$(2).img"
 	$(call Image/Build/grub/$(1))
 endef
 
@@ -362,11 +362,11 @@ endef
 ifneq ($(CONFIG_TARGET_IMAGES_GZIP),)
   ifneq ($(CONFIG_TARGET_IMAGES_RESCUE),)
     define Image/Build/rescue/ext4
-	$(call Image/Build/rescue,ext4)
+	$(call Image/Build/rescue,ext4,ext4)
 	$(call Image/Build/gzip_rescue,ext4)
     endef
     define Image/Build/rescue/squashfs
-	$(call Image/Build/rescue,squashfs)
+	$(call Image/Build/rescue,ext4,squashfs)
 	$(call Image/Build/gzip_rescue,squashfs)
     endef
   endif
