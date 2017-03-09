@@ -1,8 +1,8 @@
-From: Felix Fietkau <nbd@openwrt.org>
+From: Felix Fietkau <nbd@nbd.name>
 Date: Sat, 25 Apr 2015 12:41:32 +0200
 Subject: [PATCH] jffs2: add RENAME_EXCHANGE support
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Felix Fietkau <nbd@nbd.name>
 ---
 
 --- a/fs/jffs2/dir.c
@@ -47,7 +47,7 @@ Signed-off-by: Felix Fietkau <nbd@openwrt.org>
  	else
  		/* Unlink the original */
  		ret = jffs2_do_unlink(c, JFFS2_INODE_INFO(old_dir_i),
-@@ -879,7 +885,7 @@ static int jffs2_rename (struct inode *o
+@@ -884,7 +890,7 @@ static int jffs2_rename (struct inode *o
  		return ret;
  	}
  
